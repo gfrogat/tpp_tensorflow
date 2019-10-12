@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import tensorflow as tf
-import numpy as np
-import pandas as pd
 import json
+
+import numpy as np
+import tensorflow as tf
 from sklearn.metrics import roc_auc_score
 from tensorflow.python.client import device_lib
 
@@ -57,10 +57,9 @@ def print_config(rparam, hparam):
     print(rparam)
     print(hparam)
 
+
 def export_run_logs(run_type, run_log_dir, rparam, hparam):
-    run_logs = {
-        "run_type": run_type,
-    }
+    run_logs = {"run_type": run_type}
     run_logs.update(hparam._asdict())
     run_logs.update(rparam._asdict())
 

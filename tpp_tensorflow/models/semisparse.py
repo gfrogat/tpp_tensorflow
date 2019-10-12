@@ -17,46 +17,65 @@ class SemiSparseInput(Model):
             else None
         )
 
-        self.input_dropout_maccs_fp = layers.Dropout(
+        self.input_dropout_maccs_fp = dropout(
             rate=params.input_dropout_rate,
             seed=params.input_dropout_seed,
             name="input_dropout_maccs_fp",
         )
         self.input_maccs_fp = layers.Dense(
-            256, activation=params.activation, name="dense_maccs_fp"
+            256,
+            activation=params.activation,
+            kernel_initializer=kernel_init,
+            kernel_regularizer=kernel_reg,
+            name="dense_maccs_fp",
         )
 
-        self.input_dropout_rdkit_fp = layers.Dropout(
+        self.input_dropout_rdkit_fp = dropout(
             rate=params.input_dropout_rate,
             seed=params.input_dropout_seed,
             name="input_dropout_rdkit_fp",
         )
         self.input_rdkit_fp = layers.Dense(
-            2048, activation=params.activation, name="dense_rdkit_fp"
+            2048,
+            activation=params.activation,
+            kernel_initializer=kernel_init,
+            kernel_regularizer=kernel_reg,
+            name="dense_rdkit_fp",
         )
 
-        self.input_dropout_pubchem_fp = layers.Dropout(
+        self.input_dropout_pubchem_fp = dropout(
             rate=params.input_dropout_rate,
             seed=params.input_dropout_seed,
             name="input_dropout_pubchem_fp",
         )
         self.input_pubchem_fp = layers.Dense(
-            1024, activation=params.activation, name="dense_pubchem_fp"
+            1024,
+            activation=params.activation,
+            kernel_initializer=kernel_init,
+            kernel_regularizer=kernel_reg,
+            name="dense_pubchem_fp",
         )
 
         self.input_shed = layers.Dense(
-            8, activation=params.activation, name="dense_shed"
+            8,
+            activation=params.activation,
+            kernel_initializer=kernel_init,
+            kernel_regularizer=kernel_reg,
+            name="dense_shed",
         )
 
-        self.input_dropout_cats2d = layers.Dropout(
+        self.input_dropout_cats2d = dropout(
             rate=params.input_dropout_rate,
             seed=params.input_dropout_seed,
             name="input_dropout_cats2d",
         )
         self.input_cats2d = layers.Dense(
-            32, activation=params.activation, name="dense_cats2d"
+            32,
+            activation=params.activation,
+            kernel_initializer=kernel_init,
+            kernel_regularizer=kernel_reg,
+            name="dense_cats2d",
         )
-
 
     def call(self, features, training=False):
         x1 = self.input_dropout_maccs_fp(features["maccs_fp"])

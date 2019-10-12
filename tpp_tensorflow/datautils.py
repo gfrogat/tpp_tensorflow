@@ -128,7 +128,7 @@ def get_tfrecords_input_fn(feature):
         cache=False,
         split_train_eval=False,
         train_set_size=278578,
-        shuffle = False,
+        shuffle=False,
         rparams=None,
     ):
         num_calls = (

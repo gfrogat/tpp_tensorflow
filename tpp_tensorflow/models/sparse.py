@@ -5,9 +5,6 @@ class SparseInput(Model):
     def __init__(self, params):
         super(SparseInput, self).__init__()
 
-        # Correctly handle SELU
-        dropout = layers.AlphaDropout if params.activation == "selu" else layers.Dropout
-
         kernel_init = (
             "lecun_normal" if params.activation == "selu" else params.kernel_init
         )
@@ -25,7 +22,6 @@ class SparseInput(Model):
             kernel_regularizer=kernel_reg,
             name="input_{}".format(params.feature),
         )
-
 
     def call(self, features, training=False):
         x = self.input_layer(features)

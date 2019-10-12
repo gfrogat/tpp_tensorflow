@@ -27,8 +27,15 @@ def train_step(features, labels, models, metrics, optimizer, params):
 
         loss = masked_cross_entropy(labels_fmt, logits, mask)
 
-    gradients = tape.gradient(loss, input_model.trainable_variables + output_model.trainable_variables)
-    optimizer.apply_gradients(zip(gradients, input_model.trainable_variables + output_model.trainable_variables))
+    gradients = tape.gradient(
+        loss, input_model.trainable_variables + output_model.trainable_variables
+    )
+    optimizer.apply_gradients(
+        zip(
+            gradients,
+            input_model.trainable_variables + output_model.trainable_variables,
+        )
+    )
 
     train_loss(loss)
     train_accuracy(labels_fmt, predictions, mask)
@@ -39,8 +46,8 @@ def eval_step(features, labels, models, metrics, params, output=False):
     eval_loss, eval_accuracy = metrics
     input_model, output_model = models
 
-    x = input_model(features, training=True)
-    logits = output_model(x, training=True)
+    x = input_model(features, training=False)
+    logits = output_model(x, training=False)
 
     with tf.name_scope("compute_probabilities"):
         probabilities = tf.sigmoid(logits)
