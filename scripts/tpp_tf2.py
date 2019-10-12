@@ -12,14 +12,9 @@ import os
 
 # In[ ]:
 
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
-
-# In[ ]:
-
-
 import tensorflow as tf
+import pandas as pd
+import numpy as np
 
 
 # In[ ]:
@@ -73,6 +68,12 @@ RECORDS_TEST = (DATA_ROOT_DISK1 / f"runs/thesis_chembl25/records_{FEATURE_TYPE}/
 
 AUC_MASK_TRAIN_PATH = (DATA_ROOT_DISK1 / f"runs/thesis_chembl25/records_{FEATURE_TYPE}/label_mask_train.parquet/").as_posix()
 AUC_MASK_TEST_PATH = (DATA_ROOT_DISK1 / f"runs/thesis_chembl25/records_{FEATURE_TYPE}/label_mask_test.parquet/").as_posix()
+
+
+# In[ ]:
+
+
+COMMON_ASSAYS_MASK_PATH = Path("/publicdata/tpp/runs/thesis_chembl25/common_assays_mask.parquet").as_posix()
 
 
 # In[ ]:
@@ -149,6 +150,7 @@ args = parser.parse_args((f"""
     --records-test {RECORDS_TEST} 
     --auc-mask-train-path {AUC_MASK_TRAIN_PATH} 
     --auc-mask-test-path {AUC_MASK_TEST_PATH} 
+    --common-assays-mask-path {COMMON_ASSAYS_MASK_PATH} 
     --num-epochs {NUM_EPOCHS} --batch-size {BATCH_SIZE} --dropout-rate {DROPOUT_RATE} 
     --lr {LR} --lr-decay-steps {LR_DECAY_STEPS} --lr-decay-rate {LR_DECAY_RATE}
     --input-dropout-rate {INPUT_DROPOUT_RATE} --activation {ACTIVATION} --reg-l2-rate {REG_L2_RATE}
@@ -173,10 +175,10 @@ rparam, hparam = get_params(args)
 # In[ ]:
 
 
-train_ds = input_fn(rparam.records_train, mode="train", cache=True, split_train_eval=True, train_set_size=rparam.train_set_size, num_epochs=1, batch_size=hparam.batch_size, rparams=rparam)
+train_ds = input_fn(rparam.records_train, mode="train", cache=True, split_train_eval=True, train_set_size=rparam.train_set_size, num_epochs=1, batch_size=hparam.batch_size, shuffle=True, rparams=rparam)
 val_ds = input_fn(rparam.records_train, mode="eval", cache=True, split_train_eval=True, train_set_size=rparam.train_set_size, num_epochs=1, batch_size=hparam.batch_size, rparams=rparam)
 
-train_ds_auc = input_fn(rparam.records_train, mode="eval", cache=True, split_train_eval=True, train_set_size=rparam.train_set_size, num_epochs=1, batch_size=hparam.batch_size, rparams=rparam)
+train_ds_auc = input_fn(rparam.records_train, mode="train", cache=True, split_train_eval=True, train_set_size=rparam.train_set_size, num_epochs=1, batch_size=hparam.batch_size, rparams=rparam)
 
 
 # In[ ]:
@@ -239,6 +241,13 @@ val_summary_writer = tf.summary.create_file_writer(val_log_dir.as_posix())
 # In[ ]:
 
 
+label_mask_train = pd.read_parquet(rparam.auc_mask_train_path).key.values
+label_mask_val = pd.read_parquet(rparam.auc_mask_train_path).key.values
+
+
+# In[ ]:
+
+
 global_step = 0
 for epoch in range(hparam.num_epochs):
     for features, labels in train_ds:        
@@ -246,7 +255,7 @@ for epoch in range(hparam.num_epochs):
         train_step(features, labels, models, train_metrics, optimizer, hparam)
         global_step += 1
         
-    train_mean_auc, _ = compute_mean_auc_fold(models, train_ds_auc, eval_step, hparam, rparam.auc_mask_train_path)
+    train_mean_auc, _ = compute_mean_auc_fold(models, train_ds_auc, eval_step, hparam, label_mask_train)
     
     with train_summary_writer.as_default():
         tf.summary.scalar('loss', train_loss.result(), step=epoch)
@@ -256,14 +265,14 @@ for epoch in range(hparam.num_epochs):
     for features, labels in val_ds:
         eval_step(features, labels, models, val_metrics, hparam)
         
-    val_mean_auc, _ = compute_mean_auc_fold(models, val_ds, eval_step, hparam, rparam.auc_mask_test_path)
+    val_mean_auc, _ = compute_mean_auc_fold(models, val_ds, eval_step, hparam, label_mask_val)
     
     with val_summary_writer.as_default():
         tf.summary.scalar('loss', val_loss.result(), step=epoch)
         tf.summary.scalar('accuracy', val_accuracy.result(), step=epoch)
         tf.summary.scalar("mean_auc", val_mean_auc, step=epoch)
         
-    template = 'Epoch {0}, Loss: {1:.5g}, Accuracy: {2:.5g}, meanAUC: {3:.5g}, Val Loss: {4:.5g}, Val Accuracy: {5:.5g}, Val meanAUC: {6:.5g}'
+    template = 'Epoch {0}, Loss: {1:.5g}, Accuracy: {2:.5g}, meanAUC: {3:.8g}, Val Loss: {4:.5g}, Val Accuracy: {5:.5g}, Val meanAUC: {6:.8g}'
     print(template.format(
         epoch,
         train_loss.result(),
@@ -282,20 +291,32 @@ for epoch in range(hparam.num_epochs):
 # In[ ]:
 
 
-model.save(rparam.model_dir)
-
-
-# In[ ]:
-
-
 export_run_logs(args.run_type, args.run_log_dir, rparam, hparam)
 
 
 # In[ ]:
 
 
+label_mask_test = pd.read_parquet(rparam.auc_mask_test_path).key.values
+
+
+# In[ ]:
+
+
+common_assays_mask = pd.read_parquet(rparam.common_assays_mask_path)
+
+
+# In[ ]:
+
+
+label_mask_test = set(label_mask_test) & set(np.nonzero(common_assays_mask.assay_id.values)[0])
+
+
+# In[ ]:
+
+
 test_ds = input_fn(rparam.records_test, mode="eval", cache=False, split_train_eval=False, num_epochs=1, batch_size=hparam.batch_size, rparams=rparam)
-test_mean_auc, _ = compute_mean_auc_fold(models, test_ds, eval_step, hparam, rparam.auc_mask_test_path)
+test_mean_auc, _ = compute_mean_auc_fold(models, test_ds, eval_step, hparam, label_mask_test)
 
 
 # In[ ]:
@@ -305,8 +326,5 @@ print(f"Test meanAUC: {test_mean_auc}")
 
 
 # In[ ]:
-
-
-
 
 

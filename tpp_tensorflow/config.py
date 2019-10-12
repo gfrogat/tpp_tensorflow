@@ -12,6 +12,7 @@ RParam = namedtuple(
         "records_test",
         "auc_mask_train_path",
         "auc_mask_test_path",
+        "common_assays_mask_path",
         "model_dir",
         "train_set_size",
         "num_classes",
@@ -67,6 +68,7 @@ parser_runparam.add_argument("--records-train", type=Path, required=True)
 parser_runparam.add_argument("--records-test", type=Path, required=True)
 parser_runparam.add_argument("--auc-mask-train-path", type=Path, required=True)
 parser_runparam.add_argument("--auc-mask-test-path", type=Path, required=True)
+parser_runparam.add_argument("--common-assays-mask-path", type=Path, required=True)
 parser_runparam.add_argument("--model-dir", type=Path, required=True)
 parser_runparam.add_argument("--checkpoint-secs", type=int, default=60)
 parser_runparam.add_argument("--train-set-size", type=int, default=278578)
@@ -150,6 +152,7 @@ def get_params_semisparse(args):
         records_test=(args.records_test / "part-*").as_posix(),
         auc_mask_train_path=args.auc_mask_train_path.as_posix(),
         auc_mask_test_path=args.auc_mask_test_path.as_posix(),
+        common_assays_mask_path=args.common_assays_mask_path.as_posix(),
         model_dir=(args.model_dir / run_id).as_posix(),
         train_set_size=args.train_set_size,
         num_classes=args.num_classes,
@@ -178,6 +181,7 @@ def get_params_sparse(args):
         records_test=(args.records_test / "part-*").as_posix(),
         auc_mask_train_path=args.auc_mask_train_path.as_posix(),
         auc_mask_test_path=args.auc_mask_test_path.as_posix(),
+        common_assays_mask_path=args.common_assays_mask_path.as_posix(),
         model_dir=(args.model_dir / run_id).as_posix(),
         train_set_size=args.train_set_size,
         num_classes=args.num_classes,

@@ -44,7 +44,7 @@ class DenseHead(Model):
 
     def call(self, x, training=False):
         for h_layer, d_layer in zip(self.hidden_layers, self.dropout_layers):
-            x = h_layer(x)
             x = d_layer(x, training)
+            x = h_layer(x)
 
         return self.output_layer(x)
